@@ -42,13 +42,17 @@
 					tableBody.innerHTML = '';
 					data.items.forEach(item => {
 						const row = document.createElement('tr');
+						
+						if(item.corporate_name) {owner_name = `${item.corporate_name}`;}
+						else {owner_name = `${item.prime_other_names} ${item.prime_surname}`;}
+						
 						row.innerHTML = `
 							<td><a href="javascript:getPropertyUrl('${item.title_no}');">${item.title_no}</a></td>
 							<td>${item.land_district}</td>
 							<!--td>${item.status}</td-->
 							<!--td>${item.estate_share}</td-->
 							<!--td>${item.owner_type}</td-->
-							<td>${item.corporate_name}${item.prime_other_names} ${item.prime_surname}</td>
+							<td>${owner_name}</td>
 						`;
 						tableBody.appendChild(row);
 					});
