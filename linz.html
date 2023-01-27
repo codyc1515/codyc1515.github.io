@@ -45,12 +45,10 @@
 						row.innerHTML = `
 							<td><a href="javascript:getPropertyUrl('${item.title_no}');">${item.title_no}</a></td>
 							<td>${item.land_district}</td>
-							<td>${item.status}</td>
-							<td>${item.estate_share}</td>
-							<td>${item.owner_type}</td>
-							<td>${item.corporate_name}</td>
-							<td>${item.prime_other_names}</td>
-							<td>${item.prime_surname}</td>
+							<!--td>${item.status}</td-->
+							<!--td>${item.estate_share}</td-->
+							<!--td>${item.owner_type}</td-->
+							<td>${item.corporate_name}${item.prime_other_names} ${item.prime_surname}</td>
 						`;
 						tableBody.appendChild(row);
 					});
@@ -116,12 +114,10 @@
 					<tr>
 						<th>Title No</th>
 						<th>Land District</th>
-						<th>Status</th>
-						<th>Estate Share</th>
-						<th>Owner Type</th>
-						<th>Corporate Name</th>
-						<th>Other Names</th>
-						<th>Surname</th>
+						<!--th>Status</th-->
+						<!--th>Estate Share</th-->
+						<!--th>Owner Type</th-->
+						<th>Name</th>
 					</tr>
 				</thead>
 				<tbody id="data-table-body"></tbody>
