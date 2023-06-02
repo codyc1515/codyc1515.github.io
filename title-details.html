@@ -1,14 +1,17 @@
-<!DOCTYPE html>
 <html>
 	<head>
-		<title>API Response Table</title>
+		<title>Title Details</title>
+		<meta name="robots" content="noindex, nofollow">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
 		<script>
 		function refresh() {
 			var titleNo = getUrlParameter('title_no');
 			var landDistrict = getUrlParameter('land_district');
-			var apiUrl = 'https://data.linz.govt.nz/services/query/v1/feature.dojodata/51695/?v=1.3&key=09e377efa1534621a7138e1431969d8e&query={"title_no":"' + titleNo + '","land_district":"' + landDistrict + '"}&start=0&count=100';
+			var apiUrl = 'https://data.linz.govt.nz/services/query/v1/feature.dojodata/51695/?v=1.3&key=678a160261c44bd2ac90203075e84d99&query={"title_no":"' + titleNo + '","land_district":"' + landDistrict + '"}&start=0&count=100';
+
+			document.getElementById('loading').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
 			$.ajax({
 				url: apiUrl,
@@ -51,12 +54,13 @@
 
 						tableHtml += '</tbody></table>';
 						$('#tableContainer').html(tableHtml);
+						document.getElementById('loading').style.display = "none";
 					} else {
-						$('#tableContainer').html('No data available.');
+						$('#loading').html('No data available');
 					}
 				},
 				error: function() {
-					$('#tableContainer').html('Error occurred while fetching data.');
+					$('#loading').html('Error occurred while fetching data');
 				}
 			});
 
@@ -75,10 +79,26 @@
 	<body class="bg-light">
 		<div class="container">
 			<div class="py-5">
-				<h1 class="text-center">LINZ Title Detail</h1>
+				<h1 class="text-center">LINZ Title Details</h1>
 			</div>
-			<label><input type="checkbox" id="currentCheckbox"> Show Current Only</label>
+			
+			<form class="row align-items-center g-3 align-items-center">
+				<div class="col-12" style="display:none;">
+					<div class="form-check form-check-inline mb-3">
+						<input type="checkbox" id="currentCheckbox" class="form-check-input">
+						<label for="currentCheckbox" class="form-check-label">Show Current Only</label>
+					</div>
+				</div>
+				<div class="d-grid gap-2">
+					<button class="btn btn-primary" type="button" id="loading" style="color: red;text-align: center;">Loading</button>
+				</div>
+			</form>
+			
 			<div id="tableContainer"></div>
+			
+			<hr />
+			
+			<footer><p><small>Usage subject to LINZ Privacy Policy - search responsibly.</small></p></footer>
 		</div>
 	</body>
 </html>
