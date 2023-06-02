@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>API Response Table</title>
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+		<script>
+		function refresh() {
+			var titleNo = getUrlParameter('title_no');
+			var landDistrict = getUrlParameter('land_district');
+			var apiUrl = 'https://data.linz.govt.nz/services/query/v1/feature.dojodata/51695/?v=1.3&key=09e377efa1534621a7138e1431969d8e&query={"title_no":"' + titleNo + '","land_district":"' + landDistrict + '"}&start=0&count=100';
+
+			$.ajax({
+				url: apiUrl,
+				dataType: 'json',
+				success: function(response) {
+					var items = response.items;
+
+					if (items && items.length > 0) {
+						// Filter by current = true if checkbox is checked
+						var currentOnly = $('#currentCheckbox').is(':checked');
+							if (currentOnly) {
+							items = items.filter(function(item) {
+								return item.current === 'true';
+							});
+						}
+
+						// Sort by instrument_lodged_datetime (newest to oldest)
+						items.sort(function(a, b) {
+							return new Date(b.instrument_lodged_datetime) - new Date(a.instrument_lodged_datetime);
+						});
+
+						var tableHtml = `<table class="table table-responsive mt-5"><thead><tr>
+						<th>Instrument Number</th>
+						<th>Instrument Type</th>
+						<th>Lodged Date Time</th>
+						<th>Memorial Text</th>
+						<th>Current</th>
+						</tr></thead><tbody>`;
+
+						for (var i = 0; i < items.length; i++) {
+							var item = items[i];
+							tableHtml += '<tr>';
+							tableHtml += '<td>' + item['instrument_number'] + '</td>';
+							tableHtml += '<td>' + item['instrument_type'] + '</td>';
+							tableHtml += '<td>' + item['instrument_lodged_datetime'] + '</td>';
+							tableHtml += '<td>' + item['memorial_text'].replace(item['instrument_number'], '').replace(' - ', '<br /><small style="font-size:8px;color:grey;">').trim() + '</td>';
+							tableHtml += '<td>' + item['current'] + '</td>';
+							tableHtml += '</tr>';
+						}
+
+						tableHtml += '</tbody></table>';
+						$('#tableContainer').html(tableHtml);
+					} else {
+						$('#tableContainer').html('No data available.');
+					}
+				},
+				error: function() {
+					$('#tableContainer').html('Error occurred while fetching data.');
+				}
+			});
+
+			function getUrlParameter(name) {
+				name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
+				var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+				var results = regex.exec(location.search);
+				return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+			}
+		}
+		
+		$(document).ready(function() {refresh();});
+		$('#currentCheckbox').change(function() {refresh();});
+		</script>
+	</head>
+	<body class="bg-light">
+		<div class="container">
+			<div class="py-5">
+				<h1 class="text-center">LINZ Title Detail</h1>
+			</div>
+			<label><input type="checkbox" id="currentCheckbox"> Show Current Only</label>
+			<div id="tableContainer"></div>
+		</div>
+	</body>
+</html>
