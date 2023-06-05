@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SnapSendSolve Christchurch City</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    #map {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+    }
+
+    #fullscreen {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+    }
+
+    #map-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      z-index: 3;
+    }
+
+    #marker-image {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 80%;
+      max-height: 80%;
+    }
+	
+	#search-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 5px;
+    }
+	
+	#marker-text {
+		position: absolute;
+		bottom: 0%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		max-width: 80%;
+		max-height: 80%;
+		background: rgb(0,0,0,0.25);
+		color: white;
+		padding-left: 25px;
+		padding-right: 25px;
+	}
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div id="map-container">
+    <img id="marker-image" src="" alt="Marker" />
+	<p id="marker-text" />
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // Initialize the map
+    const map = L.map('map').setView([-43.532081, 172.631581], 12);
+
+    // Add the OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Create a custom icon using the placeholder image URL
+    const customIcon = L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+      shadowSize: [41, 41]
+    });
+
+    // Fetch GeoJSON data from the API with a search parameter
+    function fetchMarkers(searchParameter = '') {
+      fetch(`https://gis.ccc.govt.nz/arcgis/rest/services/CorporateData/Administrative/MapServer/27/query?text=&objectIds=&time=&timeRelation=esriTimeRelationOverlaps&geometry=&geometryType=esriGeometryPoint&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Meter&relationParam=&outFields=*&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=ReportID+DESC&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=100&returnExtentOnly=false&sqlFormat=none&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson&where=ReportAddress+LIKE+%27%25${searchParameter}%25%27`)
+        .then(response => response.json())
+        .then(data => {
+          // Iterate over the GeoJSON features and add markers with custom icons
+          data.features.forEach(feature => {
+            const marker = L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], { icon: customIcon }).addTo(map);
+			
+            // Update the image URL based on the availability of ImageLink1 property
+            if (feature.properties.ImageLink1) {
+			  // Update the marker's icon URL with the image from the API
+			  marker.setIcon(L.icon({
+				iconUrl: feature.properties.ImageLink1,
+				iconSize: [100, 100],
+				iconAnchor: [25, 50]
+			  }));
+		  }
+
+            // Open a larger view of the marker image on click
+            marker.on('click', function() {
+              const markerImage = document.getElementById('marker-image');
+              markerImage.src = feature.properties.ImageLink1;
+
+              const markerText = document.getElementById('marker-text');
+              markerText.innerHTML = "<p>IncidentType: " + feature.properties.IncidentType + "</p>" +
+			  "<p>ReportAddress: " + feature.properties.ReportAddress + "</p>" +
+			  "<p>Notes: " + feature.properties.Notes + "</p>";
+			  
+              document.getElementById('map-container').style.display = 'block';
+            });
+          });
+
+          // Fit the map to display all markers at once
+          const bounds = L.featureGroup(data.features.map(feature =>
+            L.marker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]]))
+          ).getBounds();
+          map.fitBounds(bounds);
+        })
+        .catch(error => {
+          console.error('Error fetching GeoJSON data:', error);
+        });
+    }
+
+    // Fetch markers with the default search parameter
+    fetchMarkers();
+
+    // Close the larger view of the marker image when clicking outside the image
+    document.getElementById('map-container').addEventListener('click', function(event) {
+      if (event.target.id === 'map-container') {
+        this.style.display = 'none';
+      }
+    });
+	
+	// Add the search area
+	var textboxControl = L.control({
+        position: 'topright'
+    });
+
+    textboxControl.onAdd = function(map) {
+        var textboxDiv = L.DomUtil.create('div', 'search');
+        textboxDiv.innerHTML = '<input type="text" placeholder="Enter an address" id="search-input" /><button type="button" id="search-button">Search</button>';
+        return textboxDiv;
+    };
+
+    textboxControl.addTo(map);
+	
+    // Handle search button click event
+    document.getElementById('search-button').addEventListener('click', function() {
+      const searchInput = document.getElementById('search-input');
+      const searchParameter = searchInput.value.trim();
+      fetchMarkers(searchParameter);
+    });
+  </script>
+</body>
+</html>
