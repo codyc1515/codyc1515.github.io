@@ -67,7 +67,7 @@
   <div id="map"></div>
 
   <div id="map-container">
-    <img id="marker-image" src="" alt="Marker" />
+    <img id="marker-image" src="" />
 	<p id="marker-text" />
   </div>
 
@@ -75,6 +75,7 @@
   <script>
     // Initialize the map
     const map = L.map('map').setView([-43.532081, 172.631581], 12);
+	const markers = [];
 
     // Add the OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -93,6 +94,10 @@
 
     // Fetch GeoJSON data from the API with a search parameter
     function fetchMarkers(searchParameter = '') {
+	  // Remove existing markers from the map
+      markers.forEach(marker => marker.removeFrom(map));
+      markers.length = 0;
+	
       fetch(`https://gis.ccc.govt.nz/arcgis/rest/services/CorporateData/Administrative/MapServer/27/query?text=&objectIds=&time=&timeRelation=esriTimeRelationOverlaps&geometry=&geometryType=esriGeometryPoint&inSR=&spatialRel=esriSpatialRelIntersects&distance=&units=esriSRUnit_Meter&relationParam=&outFields=*&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&havingClause=&returnIdsOnly=false&returnCountOnly=false&orderByFields=ReportID+DESC&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=100&returnExtentOnly=false&sqlFormat=none&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&featureEncoding=esriDefault&f=geojson&where=ReportAddress+LIKE+%27%25${searchParameter}%25%27`)
         .then(response => response.json())
         .then(data => {
@@ -122,6 +127,9 @@
 			  
               document.getElementById('map-container').style.display = 'block';
             });
+			
+			// Add the marker to the markers array
+			markers.push(marker);
           });
 
           // Fit the map to display all markers at once
@@ -145,6 +153,13 @@
       }
     });
 	
+	// Close the larger view on "Esc" key press
+	  document.addEventListener('keydown', function(event) {
+		if (event.key === 'Escape') {
+		  document.getElementById('map-container').style.display = 'none';
+		}
+	  });
+	
 	// Add the search area
 	var textboxControl = L.control({
         position: 'topright'
@@ -152,7 +167,7 @@
 
     textboxControl.onAdd = function(map) {
         var textboxDiv = L.DomUtil.create('div', 'search');
-        textboxDiv.innerHTML = '<input type="text" placeholder="Enter an address" id="search-input" /><button type="button" id="search-button">Search</button>';
+        textboxDiv.innerHTML = '<input type="text" placeholder="Enter an address" id="search-input" style="padding:15px;" /><button type="button" id="search-button" style="padding:15px;">Search</button>';
         return textboxDiv;
     };
 
