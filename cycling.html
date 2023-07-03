@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Christchurch Cycling Map</title>
+    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
+
+        var map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [172.6306, -43.5320],
+            zoom: 12,
+            attributionControl: false
+        });
+
+        map.on('load', function() {
+            map.addSource('my-data', {
+                type: 'geojson',
+                data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson'
+            });
+
+            map.addLayer({
+                id: 'my-layer',
+                type: 'line',
+                source: 'my-data',
+                paint: {
+                    'line-color': [
+                        'match',
+                        ['get', 'Type'],
+                        'Cycleway', '#b60000',
+                        'Shared path', '#4646ff',
+                        'Cycle lane', '#ffc233',
+                        'Quiet street', '#f05b72',
+                        'Shared zone', '#f05b72',
+						// Gravel
+                        'grey' // Use a default color for unmatched types
+                    ],
+                    'line-width': 4
+                }
+            });
+			
+            // Add attribution to Christchurch City Council with a link to their website
+            map.addControl(new mapboxgl.AttributionControl({
+                customAttribution: 'Data &copy; <a href="https://www.ccc.govt.nz/">Christchurch City Council</a>',
+                compact: true
+            }));
+        });
+    </script>
+</body>
+</html>
