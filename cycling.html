@@ -96,25 +96,34 @@
                 data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson'
             });
 
-            map.addLayer({
-                id: 'my-layer',
-                type: 'line',
-                source: 'my-data',
-                paint: {
-                    'line-color': [
-                        'match',
-                        ['get', 'Type'],
-                        'Cycleway', '#b60000',
-                        'Shared path', '#4646ff',
-                        'Cycle lane', '#ffc233',
-                        'Quiet street', '#f05b72',
-                        'Shared zone', '#f05b72',
-						// Gravel
-                        'grey' // Use a default color for unmatched types
-                    ],
-                    'line-width': 4
-                }
-            });
+			map.addLayer({
+				id: 'my-layer',
+				type: 'line',
+				source: 'my-data',
+				paint: {
+					'line-color': [
+						'case',
+						['!=', ['get', 'ServiceStatus'], 'In Service'], // If ServiceStatus is not "In Service"
+						'grey', // Set line color to grey
+						[
+							// 'case',
+							// ['!=', ['get', 'MajorCyclewayName'], null], // If MajorCyclewayName is not null
+							// '#b60000', // Set line color to #b60000
+							//[
+								'match',
+								['get', 'Type'],
+								'Cycleway', '#b60000',
+								'Shared path', '#4646ff',
+								'Cycle lane', '#ffc233',
+								'Quiet street', '#f05b72',
+								'Shared zone', '#f05b72',
+								'black' // Use a default color for unmatched types
+							//]
+						]
+					],
+					'line-width': 4
+				}
+			});
 			
             // Add attribution to Christchurch City Council with a link to their website
             map.addControl(new mapboxgl.AttributionControl({
