@@ -17,10 +17,59 @@
             bottom: 0;
             width: 100%;
         }
+
+        #legend {
+            position: absolute;
+            bottom: 40px;
+            right: 10px;
+            padding: 10px;
+            background-color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 18px;
+            border-radius: 4px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .legend-item {
+            margin-bottom: 5px;
+        }
+
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            vertical-align: middle;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+	
+	<div id="legend">
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #b60000;"></span>
+            Cycleway
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: #4646ff;"></span>
+            Shared path
+        </div>
+		<div class="legend-item">
+            <span class="legend-color" style="background-color: #ffc233;"></span>
+            Cycle lane
+        </div>
+		<div class="legend-item">
+            <span class="legend-color" style="background-color: #f05b72;"></span>
+            Shared zone
+        </div>
+		<div class="legend-item">
+            <span class="legend-color" style="background-color: grey;"></span>
+            Planned
+        </div>
+    </div>
+
 
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
