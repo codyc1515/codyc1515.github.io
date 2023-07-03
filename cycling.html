@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Christchurch Cycling Map</title>
     <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
@@ -41,6 +42,13 @@
             height: 12px;
             vertical-align: middle;
             margin-right: 5px;
+        }
+		
+        /* Responsive styles */
+        @media screen and (max-width: 600px) {
+            #legend {
+                max-width: calc(35% - 20px);
+            }
         }
     </style>
 </head>
