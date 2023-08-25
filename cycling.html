@@ -1,80 +1,78 @@
-
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Christchurch Cycling Map</title>
-    <script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-        }
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Christchurch Cycling Map</title>
+		<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
+		<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
+		<style>
+			body, html {
+				margin: 0;
+				padding: 0;
+			}
 
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-		}
+			#map {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				width: 100%;
+			}
+			
+			#legend {
+				background-color: white;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				padding: 10px;
+				visibility: hidden;
+			}
+			
+			.legend-item {
+				margin-bottom: 5px;
+			}
+			
+			.legend-color {
+				display: inline-block;
+				width: 12px;
+				height: 12px;
+				vertical-align: middle;
+				margin-right: 5px;
+			}
+			
+			.mapboxgl-ctrl-bottom-right {
+				display:flex;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
 		
-		#legend {
-			background-color: white;
-			border: 1px solid #ccc;
-			border-radius: 4px;
-			padding: 10px;
-			visibility: hidden;
-		}
-		
-        .legend-item {
-            margin-bottom: 5px;
-        }
-		
-        .legend-color {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            vertical-align: middle;
-            margin-right: 5px;
-        }
-		
-		.mapboxgl-ctrl-bottom-right {
-			display:flex;
-		}
-    </style>
-</head>
-<body>
-    <div id="map"></div>
-	
-	<div id="legend" class="mapboxgl-ctrl mapboxgl-legend">
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: #b60000;"></span>
-            Cycleway
-        </div>
-        <div class="legend-item">
-            <span class="legend-color" style="background-color: #4646ff;"></span>
-            Shared path
-        </div>
-		<div class="legend-item">
-            <span class="legend-color" style="background-color: #ffc233;"></span>
-            Cycle lane
-        </div>
-		<div class="legend-item">
-            <span class="legend-color" style="background-color: #f05b72;"></span>
-            Shared zone
-        </div>
-		<div class="legend-item">
-            <span class="legend-color" style="background-color: grey;"></span>
-            Planned
-        </div>
-    </div>
+		<div id="legend" class="mapboxgl-ctrl mapboxgl-legend">
+			<div class="legend-item">
+				<span class="legend-color" style="background-color: #b60000;"></span>
+				Cycleway
+			</div>
+			<div class="legend-item">
+				<span class="legend-color" style="background-color: #4646ff;"></span>
+				Shared path
+			</div>
+			<div class="legend-item">
+				<span class="legend-color" style="background-color: #ffc233;"></span>
+				Cycle lane
+			</div>
+			<div class="legend-item">
+				<span class="legend-color" style="background-color: #f05b72;"></span>
+				Shared zone
+			</div>
+			<div class="legend-item">
+				<span class="legend-color" style="background-color: grey;"></span>
+				Planned
+			</div>
+		</div>
 
-
-    <script>
+		<script>
 		// Define the API key
-        mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
+		mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
 		
 		// Create an object for the legend
 		class LegendControl {
@@ -91,21 +89,21 @@
 		}
 		
 		// Create the map
-        var map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [172.6306, -43.5320],
-            zoom: 12,
-            attributionControl: false
-        });
+		var map = new mapboxgl.Map({
+			container: 'map',
+			style: 'mapbox://styles/mapbox/streets-v11',
+			center: [172.6306, -43.5320],
+			zoom: 12,
+			attributionControl: false
+		});
 		
 		// Load the map data
-        map.on('load', function() {
+		map.on('load', function() {
 			// Create the data set
-            map.addSource('my-data', {
-                type: 'geojson',
-                data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson'
-            });
+			map.addSource('my-data', {
+				type: 'geojson',
+				data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson'
+			});
 			
 			// Add each line, from the data set
 			map.addLayer({
@@ -143,12 +141,12 @@
 			// Add colour legends
 			map.addControl(new LegendControl(), 'bottom-right');
 			
-            // Add attribution to Christchurch City Council, with a link to their website
-            map.addControl(new mapboxgl.AttributionControl({
-                customAttribution: 'Data &copy; <a href="https://www.ccc.govt.nz/">Christchurch City Council</a>',
-                compact: true
-            }), 'bottom-left');
-        });
-    </script>
-</body>
+			// Add attribution to Christchurch City Council, with a link to their website
+			map.addControl(new mapboxgl.AttributionControl({
+				customAttribution: 'Data &copy; <a href="https://www.ccc.govt.nz/">Christchurch City Council</a>',
+				compact: true
+			}), 'bottom-left');
+		});
+		</script>
+	</body>
 </html>
