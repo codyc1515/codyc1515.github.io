@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>KiwiRail Train Map</title>
+		<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
+		<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
+		<style>
+			body, html {
+				margin: 0;
+				padding: 0;
+			}
+
+			#map {
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				width: 100%;
+			}
+			
+			#legend {
+				background-color: white;
+				border: 1px solid #ccc;
+				border-radius: 4px;
+				padding: 10px;
+				visibility: hidden;
+			}
+			
+			.legend-item {
+				margin-bottom: 5px;
+			}
+			
+			.legend-color {
+				display: inline-block;
+				width: 12px;
+				height: 12px;
+				vertical-align: middle;
+				margin-right: 5px;
+			}
+			
+			.mapboxgl-ctrl-bottom-right {
+				display:flex;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+
+		<script>
+		// Define the API key
+		mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
+
+		// Create the map
+		var map = new mapboxgl.Map({
+			container: 'map',
+			style: 'mapbox://styles/mapbox/streets-v11',
+			center: [172.6306, -43.5320],
+			zoom: 12,
+			attributionControl: false
+		});
+		
+		// Load the map data
+		map.on('load', function() {
+			// Create the data set
+			map.addSource('my-data', {
+				type: 'geojson',
+				data: 'https://gis.kiwirail.co.nz/arcgis/rest/services/Tracking/vehicleGevis/MapServer/28/query?outFields=*&where=1%3D1&f=geojson&token=LM8mExO-dU4Bzi51-xE0JSKwfQsjp2kdvXdS_VhvrYo.'
+			});
+			
+			// Add each line, from the data set
+			map.addLayer({
+				id: 'my-layer',
+				type: 'circle',
+				source: 'my-data'
+			});
+			
+			// Show zoom controls
+			map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+			
+			// Add attribution to KiwiRail, with a link to their website
+			map.addControl(new mapboxgl.AttributionControl({
+				customAttribution: 'Data &copy; <a href="https://www.kiwirail.govt.nz/">KiwiRail</a>',
+				compact: true
+			}), 'bottom-left');
+		});
+		</script>
+	</body>
+</html>
