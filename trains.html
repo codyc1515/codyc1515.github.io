@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 	<head>
@@ -49,42 +48,171 @@
 		<div id="map"></div>
 
 		<script>
-		// Define the API key
-		mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
+		// Fetch the KiwiRail token
+		fetch('https://corsproxy.io/?https://gis.kiwirail.co.nz/Geocortex/Essentials/REST/sites/kiwirailpropertyview?f=json&deep=true')
+			.then(response => response.json())
+			.then(data => {
+				const token = data.map.mapServices[0].connectionString.match(/token=([^&]*)/)[1];
+				
+				// Define the API key
+				mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
 
-		// Create the map
-		var map = new mapboxgl.Map({
-			container: 'map',
-			style: 'mapbox://styles/mapbox/streets-v11',
-			center: [172.6306, -43.5320],
-			zoom: 12,
-			attributionControl: false
-		});
-		
-		// Load the map data
-		map.on('load', function() {
-			// Create the data set
-			map.addSource('my-data', {
-				type: 'geojson',
-				data: 'https://gis.kiwirail.co.nz/arcgis/rest/services/Tracking/vehicleGevis/MapServer/28/query?outFields=*&where=1%3D1&f=geojson&token=LM8mExO-dU4Bzi51-xE0JSKwfQsjp2kdvXdS_VhvrYo.'
+				// Create the map
+				var map = new mapboxgl.Map({
+					container: 'map',
+					style: 'mapbox://styles/mapbox/streets-v11',
+					center: [172.6306, -43.5320],
+					zoom: 14,
+					attributionControl: false
+				});
+				
+				// Function to refresh the map data
+				function refreshMapData(map, token) {
+					// Fetch new data from the server
+					fetch('https://gis.kiwirail.co.nz/arcgis/rest/services/Tracking/vehicleGevis/MapServer/35/query?outFields=*&where=1%3D1&f=geojson&token=' + token)
+					.then(response => response.json())
+					.then(data => {
+						// Update the map source data
+						map.getSource('my-data').setData(data);
+					})
+					.catch(error => {
+						console.error('Error fetching data:', error);
+					});
+				}
+				
+				// Function to set the map center to user's location
+				function setMapCenter(map) {
+					if (navigator.geolocation) {
+					navigator.geolocation.getCurrentPosition(position => {
+						const { latitude, longitude } = position.coords;
+						map.setCenter([longitude, latitude]); // Mapbox expects [longitude, latitude] format
+					}, error => {
+						console.error('Error getting location:', error);
+						// Handle errors here
+					});
+					} else {
+						console.error('Geolocation is not supported by this browser.');
+						// Handle unsupported browser
+					}
+				}
+				
+				// Load the map data
+				map.on('load', function() {
+					// Call setMapCenter function to set the map center to user's location
+					setMapCenter(map);
+
+					// Add the initial data source to the map
+					map.addSource('my-data', {
+						type: 'geojson',
+						data: 'https://gis.kiwirail.co.nz/arcgis/rest/services/Tracking/vehicleGevis/MapServer/35/query?outFields=*&where=1%3D1&f=geojson&token=' + token
+					});
+
+					// Set interval to refresh the map data every 30 seconds (30000 milliseconds)
+					setInterval(() => {
+						refreshMapData(map, token);
+					}, 30000); // Adjust the interval as needed
+					
+					// Add a layer for displaying your data
+					map.addLayer({
+						id: 'my-data-layer',
+						type: 'circle',
+						source: 'my-data',
+						paint: {
+							// Use a data-driven approach for circle-color based on the 'VEHSPD' property
+							'circle-color': [
+								'case',
+								["<", ["get", "VEHSPD"], 10], 'grey', // Lowest speed corresponds to black color
+								["<", ["get", "VEHSPD"], 20], 'green',
+								["<", ["get", "VEHSPD"], 50], 'orange',
+								["<", ["get", "VEHSPD"], 80], 'red',		// Highest speed corresponds to red color
+								'purple'
+							],
+							"circle-stroke-width": 1,
+							'circle-radius': 10,
+							'circle-opacity': [
+								'case',
+								["<", ["get", "VEHSPD"], 10], 0, // Lowest speed corresponds to black color
+								1
+							]
+						}
+					});
+					
+					// Create a single popup instance
+					const popup = new mapboxgl.Popup({
+						closeButton: false,
+						closeOnClick: false
+					});
+
+					// Add a hover effect to the layer
+					map.on('mouseenter', 'my-data-layer', (e) => {
+						// Change the cursor style as desired
+						map.getCanvas().style.cursor = 'pointer';
+
+						const coordinates = e.features[0].geometry.coordinates.slice();
+						const properties = e.features[0].properties;
+						
+						// Subtract 12 hours from the timestamp
+						const adjustedTimestamp = properties.TIMESTMPNZ - (12 * 60 * 60 * 1000);
+
+						// Convert adjusted timestamp to Date object
+						const date = new Date(adjustedTimestamp);
+
+						// Format the date in a human-readable format
+						const nzTime = date.toLocaleString('en-NZ', { timeZone: 'Pacific/Auckland' });
+
+						// Calculate the time difference
+						const now = new Date();
+						const timeDifference = now - date;
+						let timeAgo;
+
+						if (timeDifference < 60 * 1000) {
+							timeAgo = 'Just now';
+						} else if (timeDifference < 60 * 60 * 1000) {
+						const minutesAgo = Math.floor(timeDifference / (1000 * 60));
+							timeAgo = minutesAgo + (minutesAgo === 1 ? ' minute ago' : ' minutes ago');
+						} else if (timeDifference < 24 * 60 * 60 * 1000) {
+							const hoursAgo = Math.floor(timeDifference / (1000 * 60 * 60));
+							timeAgo = hoursAgo + (hoursAgo === 1 ? ' hour ago' : ' hours ago');
+						} else {
+							const daysAgo = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+							timeAgo = daysAgo + (daysAgo === 1 ? ' day ago' : ' days ago');
+						}
+						
+						// Remove ".gif" from the image name
+						const imageName = properties.TRNIMAGE.replace(/\.gif$/, '');
+
+						// Create a popup with more information
+						popup.setLngLat(coordinates)
+							.setHTML(`<h2>${properties.EQUIPDESC}</h2><h3>${properties.TRNDESCRP}</h3><h4>${imageName} ${properties.EQUPTYPECD}</h4><p>${timeAgo}<br />(<small>${nzTime}</small>)</p><p>Speed: ${properties.VEHSPD}</p><p>Delay: ${properties.DELAYTIME} mins</p><p>Length: ${properties.TOTALLENGTH}</p><p>Weight: ${properties.TOTALWEIGHT}</p>`)
+							.addTo(map);
+					});
+
+					// Reset the cursor style on mouse leave
+					map.on('mouseleave', 'my-data-layer', () => {
+						map.getCanvas().style.cursor = '';
+						popup.remove();
+					});
+					
+					// Add each circle, from the data set
+					map.addLayer({
+						id: 'my-layer',
+						type: 'circle',
+						source: 'my-data'
+					});
+					
+					// Show zoom controls
+					map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+					
+					// Add attribution to KiwiRail, with a link to their website
+					map.addControl(new mapboxgl.AttributionControl({
+						customAttribution: 'Data &copy; <a href="https://www.kiwirail.govt.nz/">KiwiRail</a>',
+						compact: true
+					}), 'bottom-left');
+				});
+			})
+			.catch(error => {
+				console.error('Error fetching token:', error);
 			});
-			
-			// Add each line, from the data set
-			map.addLayer({
-				id: 'my-layer',
-				type: 'circle',
-				source: 'my-data'
-			});
-			
-			// Show zoom controls
-			map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-			
-			// Add attribution to KiwiRail, with a link to their website
-			map.addControl(new mapboxgl.AttributionControl({
-				customAttribution: 'Data &copy; <a href="https://www.kiwirail.govt.nz/">KiwiRail</a>',
-				compact: true
-			}), 'bottom-left');
-		});
 		</script>
 	</body>
 </html>
