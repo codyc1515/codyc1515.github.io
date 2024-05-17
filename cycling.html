@@ -3,6 +3,9 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-title" content="CCC Cycling">
+		<meta name="theme-color" content="#ffffff">
 		<title>Christchurch Cycling Map</title>
 		<script src="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.js"></script>
 		<link href="https://cdn.jsdelivr.net/npm/mapbox-gl@2.3.1/dist/mapbox-gl.css" rel="stylesheet" />
@@ -93,23 +96,47 @@
 			container: 'map',
 			style: 'mapbox://styles/mapbox/streets-v11',
 			center: [172.6306, -43.5320],
-			zoom: 12,
+			zoom: 18,
 			attributionControl: false
 		});
-		
+
+		// Function to set the map center to user's location
+		function setMapCenter(map) {
+			if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(position => {
+				const { latitude, longitude } = position.coords;
+				map.setCenter([longitude, latitude]); // Mapbox expects [longitude, latitude] format
+			}, error => {
+				console.error('Error getting location:', error);
+				// Handle errors here
+			});
+			} else {
+				console.error('Geolocation is not supported by this browser.');
+				// Handle unsupported browser
+			}
+		}
+
 		// Load the map data
 		map.on('load', function() {
+			// Call setMapCenter function to set the map center to user's location
+			setMapCenter(map);
+
+			// Update the map center every 5 seconds
+			setInterval(() => {
+				setMapCenter(map);
+			}, 5000);
+
 			// Create the data set
-			map.addSource('my-data', {
+			map.addSource('my-lines-data', {
 				type: 'geojson',
 				data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/1/query?outFields=*&where=1%3D1&f=geojson'
 			});
 			
 			// Add each line, from the data set
 			map.addLayer({
-				id: 'my-layer',
+				id: 'my-lines',
 				type: 'line',
-				source: 'my-data',
+				source: 'my-lines-data',
 				paint: {
 					'line-color': [
 						'case',
@@ -131,10 +158,116 @@
 							//]
 						]
 					],
-					'line-width': 4
+					'line-width': 4,
+					'line-opacity': [
+						'case',
+						['!=', ['get', 'ServiceStatus'], 'In Service'],
+					    0.3, // Make "Planned" lines 30% visible
+						1 // Default opacity for all other types
+					]
+				},
+				layout: {
+					'line-sort-key': [
+						'match',
+						['get', 'Type'],
+						'Cycleway', 6,
+						'Shared path', 5,
+						'Shared zone', 4,
+						'Cycle lane', 3,
+						'Planned', 2,
+						1 // Default z-order for unmatched types
+					]
 				}
 			});
-			
+
+			// Create the data set
+			map.addSource('my-points-data', {
+				type: 'geojson',
+				data: 'https://gis.ccc.govt.nz/server/rest/services/OpenData/Cycle/FeatureServer/0/query?outFields=*&where=Type%3D%27Cycle+Stand%27&f=geojson'
+			});
+
+			// Add the circle layer
+			map.addLayer({
+				id: 'my-points-circle',
+				type: 'circle',
+				source: 'my-points-data',
+				paint: {
+					'circle-radius': [
+						'interpolate',
+						['linear'],
+						['get', 'NumberOfBikes'],
+						5, 13,  // For NumberOfBikes = 5, circle radius = 13
+						10, 18, // For NumberOfBikes = 10, circle radius = 18
+						15, 23, // For NumberOfBikes = 15, circle radius = 23
+						20, 28, // For NumberOfBikes = 20, circle radius = 28
+						25, 33  // For NumberOfBikes = 25, circle radius = 33
+					],
+					'circle-color': [
+						'match',
+						['get', 'CycleStandDesign'],
+						'Locky Dock', 'purple',
+						'blue'
+					], // Set the background color of the circle to blue
+					'circle-opacity': 0.5 // Adjust the opacity of the circle background
+ 				}
+			});
+
+			// Add the text layer
+			map.addLayer({
+				id: 'my-points-text',
+				type: 'symbol',
+				source: 'my-points-data',
+				layout: {
+					'text-field': [
+						'match',
+						['get', 'CycleStandDesign'],
+						'Loop - Horseshoe', 'Ω',
+						'Wide Staple - Sheffield', '∩',
+						'Thin Staple', '∩',
+						'Wheel slot rack', '⏸',
+						'Lollipop', '📍',
+						'Artistic', '🎨',
+						'Locky Dock', '🔓',
+						'Movable corral', '💫',
+						'Pole-mounted hoop', '┃',
+						'Not In List', 'P',
+						'P' // Default character for unmatched types
+					],
+					'text-size': 24 // Adjust the text size as needed
+				},
+				paint: {
+					'text-color': 'white' // Set text color to black
+				}
+			});
+
+			// Create a single popup instance
+			const popup = new mapboxgl.Popup({
+				closeButton: false,
+				closeOnClick: false
+			});
+
+			// Add a hover effect to the layer
+			map.on('mouseenter', 'my-points-circle', (e) => {
+				// Change the cursor style as desired
+				map.getCanvas().style.cursor = 'pointer';
+
+				const coordinates = e.features[0].geometry.coordinates.slice();
+				const properties = e.features[0].properties;
+				
+				if(properties.AssetLongDescription == "null") {properties.AssetLongDescription = "";}
+				
+				// Create a popup with more information
+				popup.setLngLat(coordinates)
+					.setHTML(`<h2 style="text-align:center;">${properties.NumberOfBikes} bikes</h2><p>${properties.AssetLongDescription}</p>${properties.Photo}`)
+					.addTo(map);
+			});
+
+			// Reset the cursor style on mouse leave
+			map.on('mouseleave', 'my-points-data', () => {
+				map.getCanvas().style.cursor = '';
+				popup.remove();
+			});
+
 			// Show zoom controls
 			map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
 			
