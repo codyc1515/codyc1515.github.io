@@ -96,36 +96,25 @@
 			container: 'map',
 			style: 'mapbox://styles/mapbox/streets-v11',
 			center: [172.6306, -43.5320],
-			zoom: 18,
+			zoom: 12,
 			attributionControl: false
 		});
 
-		// Function to set the map center to user's location
-		function setMapCenter(map) {
-			if (navigator.geolocation) {
-			navigator.geolocation.getCurrentPosition(position => {
-				const { latitude, longitude } = position.coords;
-				map.setCenter([longitude, latitude]); // Mapbox expects [longitude, latitude] format
-			}, error => {
-				console.error('Error getting location:', error);
-				// Handle errors here
-			});
-			} else {
-				console.error('Geolocation is not supported by this browser.');
-				// Handle unsupported browser
-			}
-		}
+		// Add geolocate control to the map.
+		const geolocate = new mapboxgl.GeolocateControl({
+			positionOptions: {
+				enableHighAccuracy: true
+			},
+			// When active the map will receive updates to the device's location as it changes.
+			trackUserLocation: true,
+			// Draw an arrow next to the location dot to indicate which direction the device is heading.
+			showUserHeading: true
+		});
+
+		map.addControl(geolocate);
 
 		// Load the map data
 		map.on('load', function() {
-			// Call setMapCenter function to set the map center to user's location
-			setMapCenter(map);
-
-			// Update the map center every 5 seconds
-			setInterval(() => {
-				setMapCenter(map);
-			}, 5000);
-
 			// Create the data set
 			map.addSource('my-lines-data', {
 				type: 'geojson',
@@ -207,9 +196,9 @@
 						['get', 'CycleStandDesign'],
 						'Locky Dock', 'purple',
 						'blue'
-					], // Set the background color of the circle to blue
-					'circle-opacity': 0.5 // Adjust the opacity of the circle background
- 				}
+					] // Set the background color of the circle to blue
+ 				},
+				minzoom: 15 // Show the layer only when zoom level is 18 or higher
 			});
 
 			// Add the text layer
@@ -224,12 +213,12 @@
 						'Loop - Horseshoe', 'Ω',
 						'Wide Staple - Sheffield', '∩',
 						'Thin Staple', '∩',
-						'Wheel slot rack', '⏸',
-						'Lollipop', '📍',
-						'Artistic', '🎨',
-						'Locky Dock', '🔓',
-						'Movable corral', '💫',
-						'Pole-mounted hoop', '┃',
+						'Wheel slot rack', 'S',
+						'Lollipop', 'L',
+						'Artistic', 'A',
+						'Locky Dock', 'D',
+						'Movable corral', 'C',
+						'Pole-mounted hoop', 'H',
 						'Not In List', 'P',
 						'P' // Default character for unmatched types
 					],
@@ -237,13 +226,14 @@
 				},
 				paint: {
 					'text-color': 'white' // Set text color to black
-				}
+				},
+				minzoom: 15 // Show the layer only when zoom level is 18 or higher
 			});
 
 			// Create a single popup instance
 			const popup = new mapboxgl.Popup({
-				closeButton: false,
-				closeOnClick: false
+				closeButton: true,
+				closeOnClick: true
 			});
 
 			// Add a hover effect to the layer
@@ -258,14 +248,14 @@
 				
 				// Create a popup with more information
 				popup.setLngLat(coordinates)
-					.setHTML(`<h2 style="text-align:center;">${properties.NumberOfBikes} bikes</h2><p>${properties.AssetLongDescription}</p>${properties.Photo}`)
+					.setHTML(`<h2 style="text-align:center;">${properties.NumberOfBikes} bikes</h2><p style="text-align:center;">${properties.AssetLongDescription}${properties.Photo}</p>`)
 					.addTo(map);
 			});
 
 			// Reset the cursor style on mouse leave
-			map.on('mouseleave', 'my-points-data', () => {
+			map.on('mouseleave', 'my-points-circle', () => {
 				map.getCanvas().style.cursor = '';
-				popup.remove();
+				//popup.remove();
 			});
 
 			// Show zoom controls
@@ -279,6 +269,8 @@
 				customAttribution: 'Data &copy; <a href="https://www.ccc.govt.nz/">Christchurch City Council</a>',
 				compact: true
 			}), 'bottom-left');
+			
+			geolocate.trigger();
 		});
 		</script>
 	</body>
