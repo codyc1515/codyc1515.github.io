@@ -6,74 +6,98 @@
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
 		<script>
-		function refresh() {
-			var titleNo = getUrlParameter('title_no');
-			var landDistrict = getUrlParameter('land_district');
-			var apiUrl = 'https://data.linz.govt.nz/services/query/v1/feature.dojodata/51695/?v=1.3&key=2ddb76c4cb2543d69820942cf674b0f6&query={"title_no":"' + titleNo + '","land_district":"' + landDistrict + '"}&start=0&count=100';
+			function refresh() {
+				var titleNo = getUrlParameter('title_no');
+				var landDistrict = getUrlParameter('land_district');
+				var apiUrl = 'https://data.linz.govt.nz/services/query/v1/feature.dojodata/51695/?v=1.3&key=2ddb76c4cb2543d69820942cf674b0f6&query={"title_no":"' + titleNo + '","land_district":"' + landDistrict + '"}&start=0&count=100';
 
-			document.getElementById('loading').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+				document.getElementById('loading').innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
 
-			$.ajax({
-				url: apiUrl,
-				dataType: 'json',
-				success: function(response) {
-					var items = response.items;
+				$.ajax({
+					url: apiUrl,
+					dataType: 'json',
+					success: function(response) {
+						var items = response.items;
 
-					if (items && items.length > 0) {
-						// Filter by current = true if checkbox is checked
-						var currentOnly = $('#currentCheckbox').is(':checked');
-							if (currentOnly) {
-							items = items.filter(function(item) {
-								return item.current === 'true';
+						if (items && items.length > 0) {
+							// Sort items by instrument_lodged_datetime, instrument_number, and memorial_text
+							items.sort(function(a, b) {
+								return new Date(b.instrument_lodged_datetime) - new Date(a.instrument_lodged_datetime) ||
+									   a.instrument_number.localeCompare(b.instrument_number) ||
+									   a.memorial_text.localeCompare(b.memorial_text);
 							});
+
+							// Separate items into current and non-current
+							var currentItems = items.filter(function(item) {
+								return item.current === true;
+							});
+
+							var nonCurrentItems = items.filter(function(item) {
+								return item.current !== true;
+							});
+
+							// Create table HTML for current items
+							var currentTableHtml = `<table class="table table-responsive mt-5"><thead><tr><th colspan="4">Current</th></tr><tr>
+							<th>Lodged Date Time</th>
+							<th>Instrument Number</th>
+							<th>Instrument Type</th>
+							<th>Memorial Text</th>
+							</tr></thead><tbody>`;
+
+							for (var i = 0; i < currentItems.length; i++) {
+								var item = currentItems[i];
+								currentTableHtml += '<tr>';
+								currentTableHtml += '<td>' + item['instrument_lodged_datetime'] + '</td>';
+								currentTableHtml += '<td>' + item['instrument_number'] + '</td>';
+								currentTableHtml += '<td>' + item['instrument_type'] + '</td>';
+								currentTableHtml += '<td>' + item['memorial_text'].replace(item['instrument_number'], '').split(' - ')[0].trim() + '</td>';
+								currentTableHtml += '</tr>';
+							}
+
+							currentTableHtml += '</tbody></table>';
+
+							// Create table HTML for non-current items
+							var nonCurrentTableHtml = `<table class="table table-responsive mt-5"><thead><tr><th colspan="4">Historic</th></tr><tr>
+							<th>Lodged Date Time</th>
+							<th>Instrument Number</th>
+							<th>Instrument Type</th>
+							<th>Memorial Text</th>
+							</tr></thead><tbody>`;
+
+							for (var i = 0; i < nonCurrentItems.length; i++) {
+								var item = nonCurrentItems[i];
+								nonCurrentTableHtml += '<tr>';
+								nonCurrentTableHtml += '<td>' + item['instrument_lodged_datetime'] + '</td>';
+								nonCurrentTableHtml += '<td>' + item['instrument_number'] + '</td>';
+								nonCurrentTableHtml += '<td>' + item['instrument_type'] + '</td>';
+								nonCurrentTableHtml += '<td>' + item['memorial_text'].replace(item['instrument_number'], '').split(' - ')[0].trim() + '</td>';
+								nonCurrentTableHtml += '</tr>';
+							}
+
+							nonCurrentTableHtml += '</tbody></table>';
+
+							$('#tableContainer').html(currentTableHtml + nonCurrentTableHtml);
+							document.getElementById('loading').style.display = "none";
+						} else {
+							$('#loading').html('No data available');
 						}
-
-						// Sort by instrument_lodged_datetime (newest to oldest)
-						items.sort(function(a, b) {
-							return new Date(b.instrument_lodged_datetime) - new Date(a.instrument_lodged_datetime);
-						});
-
-						var tableHtml = `<table class="table table-responsive mt-5"><thead><tr>
-						<th>Instrument Number</th>
-						<th>Instrument Type</th>
-						<th>Lodged Date Time</th>
-						<th>Memorial Text</th>
-						<th>Current</th>
-						</tr></thead><tbody>`;
-
-						for (var i = 0; i < items.length; i++) {
-							var item = items[i];
-							tableHtml += '<tr>';
-							tableHtml += '<td>' + item['instrument_number'] + '</td>';
-							tableHtml += '<td>' + item['instrument_type'] + '</td>';
-							tableHtml += '<td>' + item['instrument_lodged_datetime'] + '</td>';
-							tableHtml += '<td>' + item['memorial_text'].replace(item['instrument_number'], '').replace(' - ', '<br /><small style="font-size:8px;color:grey;">').trim() + '</td>';
-							tableHtml += '<td>' + item['current'] + '</td>';
-							tableHtml += '</tr>';
-						}
-
-						tableHtml += '</tbody></table>';
-						$('#tableContainer').html(tableHtml);
-						document.getElementById('loading').style.display = "none";
-					} else {
-						$('#loading').html('No data available');
+					},
+					error: function() {
+						$('#loading').html('Error occurred while fetching data');
 					}
-				},
-				error: function() {
-					$('#loading').html('Error occurred while fetching data');
-				}
-			});
+				});
 
-			function getUrlParameter(name) {
-				name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
-				var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-				var results = regex.exec(location.search);
-				return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+				function getUrlParameter(name) {
+					name = name.replace(/[[]/, '\\[').replace(/[\]]/, '\\]');
+					var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+					var results = regex.exec(location.search);
+					return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+				}
 			}
-		}
-		
-		$(document).ready(function() {refresh();});
-		$('#currentCheckbox').change(function() {refresh();});
+
+			$(document).ready(function() {
+				refresh();
+			});
 		</script>
 	</head>
 	<body class="bg-light">
@@ -81,23 +105,15 @@
 			<div class="py-5">
 				<h1 class="text-center">LINZ Title Details</h1>
 			</div>
-			
+
 			<form class="row align-items-center g-3 align-items-center">
-				<div class="col-12" style="display:none;">
-					<div class="form-check form-check-inline mb-3">
-						<input type="checkbox" id="currentCheckbox" class="form-check-input">
-						<label for="currentCheckbox" class="form-check-label">Show Current Only</label>
-					</div>
-				</div>
 				<div class="d-grid gap-2">
 					<button class="btn btn-primary" type="button" id="loading" style="color: red;text-align: center;">Loading</button>
 				</div>
 			</form>
-			
+
 			<div id="tableContainer"></div>
-			
-			<hr />
-			
+
 			<footer><p><small>Usage subject to LINZ Privacy Policy - search responsibly.</small></p></footer>
 		</div>
 	</body>
