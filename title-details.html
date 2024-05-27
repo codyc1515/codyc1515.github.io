@@ -20,6 +20,11 @@
 						var items = response.items;
 
 						if (items && items.length > 0) {
+							// Filter items to match exact title_no and land_district
+							items = items.filter(function(item) {
+								return item.title_no === titleNo && item.land_district === landDistrict;
+							});
+							
 							// Sort items by instrument_lodged_datetime, instrument_number, and memorial_text
 							items.sort(function(a, b) {
 								return new Date(b.instrument_lodged_datetime) - new Date(a.instrument_lodged_datetime) ||
