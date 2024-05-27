@@ -28,7 +28,7 @@
 							// Sort items by instrument_lodged_datetime, instrument_number, and memorial_text
 							items.sort(function(a, b) {
 								return new Date(b.instrument_lodged_datetime) - new Date(a.instrument_lodged_datetime) ||
-									   a.instrument_number.localeCompare(b.instrument_number) ||
+									   parseFloat(b.instrument_number) - parseFloat(a.instrument_number) || // Change here to sort instrument_number in descending order
 									   a.memorial_text.localeCompare(b.memorial_text);
 							});
 
