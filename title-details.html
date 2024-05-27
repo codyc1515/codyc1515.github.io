@@ -20,6 +20,8 @@
 						var items = response.items;
 
 						if (items && items.length > 0) {
+							var currentTableHtml;
+						
 							// Filter items to match exact title_no and land_district
 							items = items.filter(function(item) {
 								return item.title_no === titleNo && item.land_district === landDistrict;
@@ -32,6 +34,14 @@
 									   a.memorial_text.localeCompare(b.memorial_text);
 							});
 
+							// Find the most recent memorial text with instrument_type value of "Transfer"
+							for (var i = 0; i < items.length; i++) {
+								if (items[i].instrument_type === "Transfer") {
+									currentTableHtml = '<div class="alert alert-primary" role="alert">' + items[i].memorial_text + '</div>';
+									break;
+								}
+							}
+							
 							// Separate items into current and non-current
 							var currentItems = items.filter(function(item) {
 								return item.current === true;
@@ -42,7 +52,7 @@
 							});
 
 							// Create table HTML for current items
-							var currentTableHtml = `<table class="table table-responsive mt-5"><thead><tr><th colspan="4">Current</th></tr><tr>
+							currentTableHtml += `<table class="table table-responsive mt-5"><thead><tr><th colspan="4">Current</th></tr><tr>
 							<th>Lodged Date Time</th>
 							<th>Instrument Number</th>
 							<th>Instrument Type</th>
