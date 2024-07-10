@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Title Map</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script src="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.js"></script>
+		<link href="https://api.mapbox.com/mapbox-gl-js/v2.8.1/mapbox-gl.css" rel="stylesheet">
+		<style>
+			body { margin: 0; padding: 0; }
+			#map { position: absolute; top: 0; bottom: 0; width: 100%; }
+			.popup-content { background: white; padding: 10px; border-radius: 3px; }
+		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+		<div id="popup" class="popup-content" style="display:none;"></div>
+		
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script>
+			mapboxgl.accessToken = 'pk.eyJ1IjoiY29keWNvb3Blcm56IiwiYSI6ImNsam02bXk0aTB0ZmkzZnFtdjQ5Nm93MmMifQ.0KQqqSakcSZyA8BPEt-jVg';
+
+			const map = new mapboxgl.Map({
+				container: 'map',
+				style: 'mapbox://styles/mapbox/streets-v11',
+				center: [172.524, -43.543],
+				zoom: 13
+			});
+
+			map.on('load', function() {
+				// Add a source for the polygon
+				map.addSource('polygon', {
+					'type': 'geojson',
+					'data': {
+						'type': 'FeatureCollection',
+						'features': []
+					}
+				});
+
+				// Add a layer to display the polygon
+				map.addLayer({
+					'id': 'polygon',
+					'type': 'line',
+					'source': 'polygon',
+					'layout': {},
+					'paint': {
+						'line-color': '#888',
+						'line-width': 2
+					}
+				});
+			});
+
+			map.on('click', function(e) {
+				const coordinates = e.lngLat;
+				const url = `https://data.linz.govt.nz/services/query/v1/vector.json/?v=1.2&key=2ddb76c4cb2543d69820942cf674b0f6&layer=50805&x=${coordinates.lng}&y=${coordinates.lat}&radius=11&max_results=10&geometry=true&with_field_names=true`;
+
+				$.getJSON(url, function(data) {
+					const features = data.vectorQuery.layers['50805'].features;
+					if (features.length > 0) {
+						const feature = features[0];
+						const owners = feature.properties.owners;
+
+						// Update the polygon source with the new data
+						map.getSource('polygon').setData({
+							'type': 'FeatureCollection',
+							'features': [feature]
+						});
+
+						// Display the popup with the ownership information
+						new mapboxgl.Popup()
+							.setLngLat([coordinates.lng, coordinates.lat])
+							.setHTML(`<div class="popup-content"><strong>Owner:</strong> ${owners}</div>`)
+							.addTo(map);
+					} else {
+						// Clear the polygon source data
+						map.getSource('polygon').setData({
+							'type': 'FeatureCollection',
+							'features': []
+						});
+
+						alert('No ownership information found for this location.');
+					}
+				});
+			});
+		</script>
+	</body>
+</html>
